@@ -1,36 +1,41 @@
-# setwd("markdowns")
+### Set wd ### ----
+setwd("/home/rstudio/Sim-Study")
 
 runsPerIter <- 100
 
-### Librarys ###
+### Librarys ### ----
 library(dplyr)
 library(rstan)
 rstan_options(auto_write = TRUE)
 options(mc.cores = parallel::detectCores())
 
-### Custom Functions ###
+### Custom Functions ### ----
 # To generate censored datasets
-source("..//scripts//progDataGenerate.R")
-source("..//scripts//dataGenerate.R")
+source("scripts//progDataGenerate.R")
+source("scripts//dataGenerate.R")
 
 # To pass data into Stan
-source("..//scripts//stanPrep.R")
+source("scripts//stanPrep.R")
 
-### Load in Stan Models ###
+### Load in Stan Models ### ----
 
-uninformativeJoint <- stan_model("..//Stan//two-parameter-weibull_censored_joint-prior-unformative.stan",
+uninformativeJoint <- stan_model("stan//two-parameter-weibull_censored_joint-prior-unformative.stan",
                                  verbose = TRUE)
-informativeJoint <- stan_model("..//Stan//two-parameter-weibull_censored_joint-prior-informative.stan",
+Sys.sleep(0.1)
+informativeJoint <- stan_model("stan//two-parameter-weibull_censored_joint-prior-informative.stan",
                                verbose = TRUE)
-uninformativeInd <- stan_model("..//Stan//two-parameter-weibull_censored_independed-uninformative.stan",
+Sys.sleep(0.1)
+uninformativeInd <- stan_model("stan//two-parameter-weibull_censored_independed-uninformative.stan",
                                verbose = TRUE)
-informativeInd <- stan_model("..//Stan//two-parameter-weibull_censored_independed-informative.stan",
+Sys.sleep(0.1)
+informativeInd <- stan_model("stan//two-parameter-weibull_censored_independed-informative.stan",
                              verbose = TRUE)
-informativeJointMiss <- stan_model("..//Stan//two-parameter-weibull_censored_joint-miss-specified-prior-informative.stan",
+Sys.sleep(0.1)
+informativeJointMiss <- stan_model("stan//two-parameter-weibull_censored_joint-miss-specified-prior-informative.stan",
                                    verbose = TRUE)
 
 
-### Result Storage ###
+### Result Storage ### ----
 # Create a multi-dimensional list to hold the simulation results
 # 5 models
 models <- list(uninformativeInd = NULL, 
@@ -51,7 +56,7 @@ for (i in 1:runsPerIter) {
   runsEmpty[[i]] <- censoringLevels
 }
 
-### Simulation ###
+### Simulation ### ----
 
 # Define the data generating constants
 shape <- 1.15
@@ -67,7 +72,9 @@ m <- 1
 n <- 1
 
 # Loop through Simulation
-for(i in 1:1000) { #length(runs)
+for(i in 1:10) { #length(runs)
+  
+  print(str_c(i, "/1000"))
   
   # generate the data sets
   dfTemp <- try(progDataGenerate(eta = scale, 
@@ -94,13 +101,15 @@ for(i in 1:1000) { #length(runs)
                    chains = 4, 
                    cores = 4,
                    iter = 1500,
-                   warmup = 500)
+                   warmup = 500, 
+                   refresh = 0)
     m2 <- sampling(object = informativeInd, 
                    data = inputData, 
                    chains = 4, 
                    cores = 4,
                    iter = 1500,
-                   warmup = 500)
+                   warmup = 500, 
+                   refresh = 0)
     
     inputData$t1 <- 3.82   # need to add some extra inputs for the joint models
     inputData$t2 <- 15
@@ -110,13 +119,15 @@ for(i in 1:1000) { #length(runs)
                    chains = 4, 
                    cores = 4,
                    iter = 1500,
-                   warmup = 500)
+                   warmup = 500, 
+                   refresh = 0)
     m4 <- sampling(object = informativeJoint, 
                    data = inputData, 
                    chains = 4, 
                    cores = 4,
                    iter = 1500,
-                   warmup = 500)
+                   warmup = 500, 
+                   refresh = 0)
     
     # need to change the t1 for the miss specified model
     inputData$t1 <- 4.21
@@ -126,7 +137,8 @@ for(i in 1:1000) { #length(runs)
                    chains = 4,
                    cores = 4,
                    iter = 1500,
-                   warmup = 500)
+                   warmup = 500, 
+                   refresh = 0)
     
     # extract the posteriors and save in list object
     
@@ -141,14 +153,12 @@ for(i in 1:1000) { #length(runs)
    
   }
   
-  ### Save Output every 10 runs###
+  ### Save Output every X runs###
   if((i %% runsPerIter) == 0){
-    save(runs, file = str_c("..//simulation_true-data-gen_", m, ".RData"))
+    save(runs, file = str_c("simulation_true-data-gen_", m, ".RData"))
     m <- m + 1
     n <- 1
+    print(srt_c((i / runsPerIter), " out of ", (1000 / runsPerIter), " saves completed"))
   } else {n <- n + 1}
   
 }
-
-
-

@@ -12,7 +12,7 @@
 #' @return A list with `n = Steps` elements, each of which is a
 #' data frame with progresively more censoring
 
-source("..//scripts//dataGenerate.R")
+source("scripts//dataGenerate.R")
 library(stringr)
 library(dplyr)
 
@@ -23,7 +23,7 @@ progDataGenerate <- function(eta,
                              props = c(0, 0.25, 0.5, 0.75, 0.95)){
   
   # Check to see if the function has been run before with these parameters
-  cacheString <- str_c("..//scripts//progDataGenerate-propData_shape-", 
+  cacheString <- str_c("scripts//progDataGenerate-propData_shape-", 
                        beta, 
                        "_scale-", 
                        eta, 
