@@ -3,7 +3,7 @@
 .Rapp.history
 
 # Session Data files
-.RData
+*.RData
 
 # User-specific files
 .Ruserdata
@@ -16,6 +16,9 @@
 
 # Output files from R CMD check
 /*.Rcheck/
+
+# Stan files
+*.rds
 
 # RStudio files
 .Rproj.user/

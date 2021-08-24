@@ -78,13 +78,13 @@ proportions <- c(0,
                  0.95)
 
 runs <- runsEmpty
-m <- 1
+m <- 6
 n <- 1
-
+nruns <- 400
 # Loop through Simulation
-for(i in 1:1000) { #length(runs)
+for(i in 1:nruns) { #length(runs)
   
-  print(str_c(i, "/1000"))
+  print(str_c(i, "/", nruns))
   
   # generate the data sets
   dfTemp <- try(progDataGenerate(eta = scale, 
@@ -131,6 +131,7 @@ for(i in 1:1000) { #length(runs)
                    iter = 1500,
                    warmup = 500, 
                    refresh = 0)
+    
     m4 <- sampling(object = informativeJoint, 
                    data = inputData, 
                    chains = 4, 
@@ -224,7 +225,7 @@ for(i in 1:1000) { #length(runs)
     save(runs, file = str_c("simulation_true-data-gen_", m, ".RData"))
     m <- m + 1
     n <- 1
-    print(srt_c((i / runsPerIter), " out of ", (1000 / runsPerIter), " saves completed"))
+    print(str_c((i / runsPerIter), " out of ", (nruns / runsPerIter), " saves completed"))
   } else {n <- n + 1}
   
 }
