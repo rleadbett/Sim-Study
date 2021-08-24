@@ -33,7 +33,12 @@ informativeInd <- stan_model("stan//two-parameter-weibull_censored_independed-in
 Sys.sleep(0.1)
 informativeJointMiss <- stan_model("stan//two-parameter-weibull_censored_joint-miss-specified-prior-informative.stan",
                                    verbose = TRUE)
-
+Sys.sleep(0.1)
+informativeJointMiss_sd1 <- stan_model("stan//two-parameter-weibull_censored_joint-miss-specified-prior-informative_var1.stan",
+                                       verbose = TRUE)
+Sys.sleep(0.1)
+informativeJointMiss_sd2 <- stan_model("stan//two-parameter-weibull_censored_joint-miss-specified-prior-informative_var2.stan",
+                                       verbose = TRUE)
 
 ### Result Storage ### ----
 # Create a multi-dimensional list to hold the simulation results
@@ -42,7 +47,12 @@ models <- list(uninformativeInd = NULL,
                informativeInd = NULL, 
                uninformativeJoint = NULL, 
                informativeJoint = NULL,
-               missSpecifiedJoint = NULL)
+               missSpecifiedJoint = NULL, 
+               missSpecifiedjoint_sd1 = NULL,
+               missSpecifiedjoint_sd2 = NULL,
+               missSpecifiedjoint_t1.1 = NULL,
+               missSpecifiedjoint_t1.2 = NULL,
+               missSpecifiedjoint_t0.9 = NULL)
 # 5 levels of censoring
 censoringLevels <- list(prop_0.00 = models, 
                         prop_0.25 = models,
@@ -72,7 +82,7 @@ m <- 1
 n <- 1
 
 # Loop through Simulation
-for(i in 1:10) { #length(runs)
+for(i in 1:1000) { #length(runs)
   
   print(str_c(i, "/1000"))
   
@@ -128,6 +138,22 @@ for(i in 1:10) { #length(runs)
                    iter = 1500,
                    warmup = 500, 
                    refresh = 0)
+
+    m6 <- sampling(object = informativeJointMiss_sd1, 
+                   data = inputData, 
+                   chains = 4, 
+                   cores = 4,
+                   iter = 1500,
+                   warmup = 500, 
+                   refresh = 0)
+
+    m7 <- sampling(object = informativeJointMiss_sd2, 
+                   data = inputData, 
+                   chains = 4, 
+                   cores = 4,
+                   iter = 1500,
+                   warmup = 500, 
+                   refresh = 0)
     
     # need to change the t1 for the miss specified model
     inputData$t1 <- 4.21
@@ -139,7 +165,42 @@ for(i in 1:10) { #length(runs)
                    iter = 1500,
                    warmup = 500, 
                    refresh = 0)
+
+    # for the 10% over estimated priors we need to reset
+    inputData$t1 <- 3.82 * 1.1
+    inputData$t2 <- 15 * 1.1
     
+    m8 <- sampling(object = informativeJoint,
+                   data = inputData,
+                   chains = 4,
+                   cores = 4,
+                   iter = 1500,
+                   warmup = 500, 
+                   refresh = 0)
+    # for the 20% over estimated priors we need to reset
+    inputData$t1 <- 3.82 * 1.2
+    inputData$t2 <- 15 * 1.2
+    
+    m9 <- sampling(object = informativeJoint,
+                   data = inputData,
+                   chains = 4,
+                   cores = 4,
+                   iter = 1500,
+                   warmup = 500, 
+                   refresh = 0)
+
+    # for the 10% under estimated priors we need to reset
+    inputData$t1 <- 3.82 * 0.9
+    inputData$t2 <- 15 * 0.9
+    
+    m10 <- sampling(object = informativeJoint,
+                    data = inputData,
+                    chains = 4,
+                    cores = 4,
+                    iter = 1500,
+                    warmup = 500, 
+                    refresh = 0)  
+
     # extract the posteriors and save in list object
     
     runs[[n]][[j]]$uninformativeInd <- extract(m1)[c(1, 4)]
@@ -147,7 +208,12 @@ for(i in 1:10) { #length(runs)
     runs[[n]][[j]]$uninformativeJoint <- extract(m3)[c(3, 4)]
     runs[[n]][[j]]$informativeJoint <- extract(m4)[c(3, 4)]
     runs[[n]][[j]]$missSpecifiedJoint <- extract(m5)[c(3, 4)]
-    
+    runs[[n]][[j]]$missSpecifiedjoint_sd1 <- extract(m6)[c(3, 4)]
+    runs[[n]][[j]]$missSpecifiedjoint_sd1 <- extract(m7)[c(3, 4)]
+    runs[[n]][[j]]$missSpecifiedjoint_t1.1 <- extract(m8)[c(3, 4)]
+    runs[[n]][[j]]$missSpecifiedjoint_t1.2 <- extract(m9)[c(3, 4)]
+    runs[[n]][[j]]$missSpecifiedjoint_t0.9 <- extract(m10)[c(3, 4)]
+
     j <- j + 1
     
    
