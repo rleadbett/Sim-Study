@@ -1,0 +1,286 @@
+---
+title: "Post processing"
+output: html_notebook
+---
+
+```{r Librarys, include=FALSE}
+library(dplyr)
+library(stringr)
+library(knitr)
+library(gifski)
+library(ggplot2)
+library(cowplot)
+```
+
+
+This notebook is to explore ways of visualising the results of the simulation study, in particular the true data censoring mechanism results.
+First we will have to construct the complete object from the 10 saved files.
+
+```{r Load the results of Sim-Study, echo=TRUE}
+base::load("results/trueSimPostProcess.RData") # renv masks the base r load function.
+
+length(simStudyTrue)
+length(simStudyTrue[[1]])
+length(simStudyTrue[[1]][[1]])
+length(simStudyTrue[[1]][[1]][[1]])
+length(simStudyTrue[[1]][[1]][[1]][[1]])
+```
+So we have 1000 simulated data sets each with 5 different levels of censoring. To each of these 1000 x 5 censored data sets we have fit 10 different models. For every fitted model we have the posterior of the two Weibull parameters (eta and beta). Each posterior is made up of 4000 draws.
+
+I am going to start of just comparing three models; the independent non informative, independent informative, and joint informative. This is because they are the most relevant to the literature.
+
+# Visulisation of the direct posterior
+
+A really simple way of visualizing the posterior would be to make Gifs of the joint posterior and see how much they move around for the three different models and censoring mechanisms.
+
+```{r Giff of posteriors, echo=FALSE, message=FALSE, fig.height=10, fig.width=10, cache=TRUE}
+
+posteriorMap <- function(sim, 
+                         prop, 
+                         model,
+                         y_lab = "",
+                         main = ""){
+  p <- simStudyTrue[[sim]][[prop]][[model]] %>% 
+        as.data.frame() %>%
+        ggplot(aes(x = eta, y = beta)) + 
+        stat_density_2d(aes(fill = ..density..), 
+                        geom = "raster", 
+                        contour = FALSE) +
+        scale_x_continuous() +
+        scale_y_continuous() +
+        xlim(3, 20) +
+        ylim(0.5, 2) +
+        theme(legend.position = "none", 
+              panel.background = element_blank()) + 
+        geom_point(size = 0.5, alpha = 0.1, colour = "white") +
+        geom_hline(aes(yintercept = 1.15, colour = "red")) + 
+        geom_vline(aes(xintercept = 5.253, colour = "red"))
+  return(p)
+}
+
+postVis <- function(i){
+  for(j in 1:i){
+
+    pJI25 <- posteriorMap(sim = j, 
+                          prop = "prop_0.25", 
+                          model = "informativeJoint") %>% +
+      labs(title = "informative joint") +
+      theme(axis.ticks = element_blank(),
+            axis.text = element_blank(),
+            axis.title = element_blank()) + 
+      geom_text(x=15.8, y=1.75, 
+                label="25% \n Censoring", 
+                col = "red", 
+                size = 5)
+    pJI25 <- ggplotGrob(pJI25)
+    
+    pIN25 <- posteriorMap(sim = j, 
+                          prop = "prop_0.25", 
+                          model = "uninformativeInd") +
+      labs(title = "noninformative ind") +
+      theme(axis.ticks.x = element_blank(),
+            axis.text.x = element_blank(),
+            axis.title.x = element_blank()) 
+    pIN25 <- ggplotGrob(pIN25)
+    
+    pII25 <- posteriorMap(sim = j, 
+                          prop = "prop_0.25", 
+                          model = "informativeInd") +
+      labs(title = "informative independant") +
+      theme(axis.ticks = element_blank(),
+            axis.text = element_blank(),
+            axis.title = element_blank())
+    pII25 <- ggplotGrob(pII25)
+    
+    pJI50 <- posteriorMap(sim = j, 
+                          prop = "prop_0.50", 
+                          model = "informativeJoint") +
+      theme(axis.ticks = element_blank(),
+            axis.text = element_blank(),
+            axis.title = element_blank()) + 
+      geom_text(x=15.8, y=1.75, 
+                label="50% \n Censoring", 
+                col = "red", 
+                size = 5)
+    pJI50 <- ggplotGrob(pJI50)
+    
+    pIN50 <- posteriorMap(sim = j, 
+                          prop = "prop_0.50", 
+                          model = "uninformativeInd") +
+      theme(axis.ticks.x = element_blank(),
+            axis.text.x = element_blank(),
+            axis.title.x = element_blank())
+    pIN50 <- ggplotGrob(pIN50)
+    
+    pII50 <- posteriorMap(sim = j, 
+                          prop = "prop_0.50", 
+                          model = "informativeInd") +
+      theme(axis.ticks = element_blank(),
+            axis.text = element_blank(),
+            axis.title = element_blank())
+    pII50 <- ggplotGrob(pII50)
+
+    pJI75 <- posteriorMap(sim = j, 
+                          prop = "prop_0.75", 
+                          model = "informativeJoint") +
+      theme(axis.ticks.y = element_blank(),
+            axis.text.y = element_blank(),
+            axis.title.y = element_blank()) + 
+      geom_text(x=15.8, y=1.75, 
+                label="75% \n Censoring", 
+                col = "red", 
+                size = 5)
+    pJI75 <- ggplotGrob(pJI75)
+    
+    pIN75 <- posteriorMap(sim = j, 
+                          prop = "prop_0.75", 
+                          model = "uninformativeInd")
+    pIN75 <- ggplotGrob(pIN75)
+    
+    
+    pII75 <- posteriorMap(sim = j, 
+                          prop = "prop_0.75", 
+                          model = "informativeInd") +
+      theme(axis.ticks.y = element_blank(),
+            axis.text.y = element_blank(),
+            axis.title.y = element_blank())
+    pII75 <- ggplotGrob(pII75)
+
+    
+#    print(plot_grid(pIN25, pII25, pJI25, 
+#                    pIN50, pII50, pJI50, 
+#                    pIN75, pII75, pJI75, 
+#                    labels = c(), 
+#                    ncol = 3, 
+#                    nrow = 3))
+gt <- gtable(widths = unit(c(1, 1, 1, 0.3), "null"), 
+             heights =  unit(c(1, 1, 1, 0.3), "null"))
+gt <- gtable_add_grob(gt, pIN25, t = 1, l = 1)
+gt <- gtable_add_grob(gt, pII25, t = 1, l = 2)
+gt <- gtable_add_grob(gt, pJI25, t = 1, l = 3)
+gt <- gtable_add_grob(gt, pIN50, t = 2, l = 1)
+gt <- gtable_add_grob(gt, pII50, t = 2, l = 2)
+gt <- gtable_add_grob(gt, pJI50, t = 2, l = 3)
+gt <- gtable_add_grob(gt, pIN75, t = 3, l = 1)
+gt <- gtable_add_grob(gt, pII75, t = 3, l = 2)
+gt <- gtable_add_grob(gt, pJI75, t = 3, l = 3)
+
+plot(gt)
+
+  }  
+}
+
+invisible(save_gif(postVis(1000), "posterior-vis.gif",
+                   delay = 0.1,
+                   width = 600, 
+                   height = 600,
+                   progress = FALSE))
+include_graphics("posterior-vis.gif")
+
+```
+
+## Utility functions
+
+It would also be usefull to have a distribution of the key decision variables.
+One of these is the mean lifetime, another is the KS statistic before and after the observation window end time. These KS statistics will tell us how closely the posterior approximates the true CDF.
+
+```{r}
+meanSummary <- function(meanLifePosterior){
+  data.frame(mean = mean(meanLifePosterior), 
+             median = median(meanLifePosterior),
+             lower97 = quantile(meanLifePosterior, 0.015, names = F),
+             upper97 = quantile(meanLifePosterior, 0.985, names = F))
+}
+```
+
+```{r}
+descriptions <- list(mean = NULL,
+                     median = NULL,
+                     lower97 = NULL,
+                     upper97 = NULL)
+
+modelList <- list()
+for (model in names(simStudyTrue[[1]][[1]])){
+  modelList[[model]] <- descriptions
+}
+
+meanLifeSimDist <- list()
+for (prop in names(simStudyTrue[[1]])){
+  meanLifeSimDist[[prop]] <- modelList
+}
+
+for(prop in names(meanLifeSimDist)){
+  for(model in names(meanLifeSimDist[[1]])){
+    meanLifePostSummary <- lapply(1:1000, 
+                              FUN = function(x) meanSummary(simStudyTrue[[x]][[prop]][[model]]$meanLife))
+    
+    for(i in 1:length(meanLifeSimDist[[1]][[1]])){
+      meanLifeSimDist[[prop]][[model]][[i]] <- lapply(meanLifePostSummary, 
+                                                      "[", i) %>% 
+        unlist() %>% 
+        as.numeric()
+    }
+  }
+}
+```
+
+```{r}
+library(ggdist)
+longPlotDf <- function(df, prop){
+  dfs <- lapply(names(df[[prop]]), 
+                function(x) as.data.frame(df[[prop]][[x]]))
+  
+  names(dfs) <- names(df[[prop]])
+  dfs <- lapply(names(dfs), 
+                function(x) dfs[[x]] %>% mutate(name = rep(x, 1000)))
+  
+  dfOut <- c()
+  for(i in 1:length(dfs)) dfOut <- rbind(dfOut, dfs[[i]])
+  
+  return(dfOut)
+}
+
+df1 <- as.data.frame(meanLifeSimDist[["prop_0.25"]][["uninformativeInd"]])
+df2 <- as.data.frame(meanLifeSimDist[["prop_0.25"]][["informativeInd"]])
+
+df1 <- mutate(df1, model = rep("uninf_ind", nrow(df1)))
+df2 <- mutate(df2, model = rep("inf_ind", nrow(df2)))
+df <- rbind(df1, df2)
+
+theme(panel.spacing = unit(0, units = "cm"))
+      
+p1 <- df %>% pivot_longer(colnames(df)[-c(5)]) %>% 
+  mutate(name = as.factor(name), 
+         model = as.factor(model)) %>%
+  ggplot(aes(x = value, y = name, col = model)) +
+  stat_pointinterval() +
+  xlab("posterior mean life") + 
+  ylab(element_blank()) +
+  facet_grid(rows = vars(model), switch = "y", as.table = F) +
+  theme_minimal() +
+  theme(panel.spacing = unit(0, units = "cm"), 
+        legend.position = "none", 
+        strip.placement = "outside")
+
+p2 <- df %>% pivot_longer(colnames(df)[-c(5)]) %>% 
+  mutate(name = as.factor(name), 
+         model = as.factor(model)) %>%
+  ggplot(aes(x = value, y = interaction(name, model), col = model)) +
+  stat_pointinterval() +
+  xlab("posterior mean life") + 
+  ylab(element_blank()) +
+  theme_minimal() +
+  theme(panel.spacing = unit(0, units = "cm"), 
+        legend.position = "none", 
+        axis.title.y=element_blank(),
+        axis.text.y = element_blank()) 
+
+library(cowplot)
+plot_grid(p1, p2, labels = c("test1", "test2"))  
+
+```
+
+turn into function.
+plot in grid format..
+add labels to each row and col of grid...
+[prop, model]

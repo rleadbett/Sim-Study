@@ -1,9 +1,21 @@
-### Set wd ### ----
+### Set up ### ----
+# set wd
 setwd("/home/rstudio/Sim-Study")
+.libPaths("/home/rstudio/library")
 
+# set seed
+set.seed(64467364)
+
+# set variables
+batchNo <- 1
 runsPerIter <- 100
+nruns <- 500
 
-### Librarys ### ----
+# mcmc paramaters
+burnin <- 1000
+samples <- 1000
+
+### Libraries ### ----
 library(dplyr)
 library(rstan)
 rstan_options(auto_write = TRUE)
@@ -58,7 +70,7 @@ censoringLevels <- list(prop_0.00 = models,
                         prop_0.25 = models,
                         prop_0.50 = models,
                         prop_0.75 = models, 
-                        prop_0.95 = models)
+                        prop_0.90 = models)
 # 1000 runs of the simulation
 runsEmpty <- list()
 
@@ -75,12 +87,14 @@ proportions <- c(0,
                  0.25, 
                  0.5, 
                  0.75, 
-                 0.95)
+                 0.90)
 
 runs <- runsEmpty
-m <- 6
+
+if(batchNo == 1){m <- 1}
+if(batchNo == 2){m <- 6}
+
 n <- 1
-nruns <- 400
 # Loop through Simulation
 for(i in 1:nruns) { #length(runs)
   
@@ -110,15 +124,15 @@ for(i in 1:nruns) { #length(runs)
                    data = inputData, 
                    chains = 4, 
                    cores = 4,
-                   iter = 1500,
-                   warmup = 500, 
+                   iter = (samples + burnin),
+                   warmup = burnin, 
                    refresh = 0)
     m2 <- sampling(object = informativeInd, 
                    data = inputData, 
                    chains = 4, 
                    cores = 4,
-                   iter = 1500,
-                   warmup = 500, 
+                   iter = (samples + burnin),
+                   warmup = burnin, 
                    refresh = 0)
     
     inputData$t1 <- 3.82   # need to add some extra inputs for the joint models
@@ -128,32 +142,32 @@ for(i in 1:nruns) { #length(runs)
                    data = inputData, 
                    chains = 4, 
                    cores = 4,
-                   iter = 1500,
-                   warmup = 500, 
+                   iter = (samples + burnin),
+                   warmup = burnin, 
                    refresh = 0)
     
     m4 <- sampling(object = informativeJoint, 
                    data = inputData, 
                    chains = 4, 
                    cores = 4,
-                   iter = 1500,
-                   warmup = 500, 
+                   iter = (samples + burnin),
+                   warmup = burnin, 
                    refresh = 0)
 
     m6 <- sampling(object = informativeJointMiss_sd1, 
                    data = inputData, 
                    chains = 4, 
                    cores = 4,
-                   iter = 1500,
-                   warmup = 500, 
+                   iter = (samples + burnin),
+                   warmup = burnin, 
                    refresh = 0)
 
     m7 <- sampling(object = informativeJointMiss_sd2, 
                    data = inputData, 
                    chains = 4, 
                    cores = 4,
-                   iter = 1500,
-                   warmup = 500, 
+                   iter = (samples + burnin),
+                   warmup = burnin, 
                    refresh = 0)
     
     # need to change the t1 for the miss specified model
@@ -163,8 +177,8 @@ for(i in 1:nruns) { #length(runs)
                    data = inputData,
                    chains = 4,
                    cores = 4,
-                   iter = 1500,
-                   warmup = 500, 
+                   iter = (samples + burnin),
+                   warmup = burnin, 
                    refresh = 0)
 
     # for the 10% over estimated priors we need to reset
@@ -175,8 +189,8 @@ for(i in 1:nruns) { #length(runs)
                    data = inputData,
                    chains = 4,
                    cores = 4,
-                   iter = 1500,
-                   warmup = 500, 
+                   iter = (samples + burnin),
+                   warmup = burnin, 
                    refresh = 0)
     # for the 20% over estimated priors we need to reset
     inputData$t1 <- 3.82 * 1.2
@@ -186,8 +200,8 @@ for(i in 1:nruns) { #length(runs)
                    data = inputData,
                    chains = 4,
                    cores = 4,
-                   iter = 1500,
-                   warmup = 500, 
+                   iter = (samples + burnin),
+                   warmup = burnin, 
                    refresh = 0)
 
     # for the 10% under estimated priors we need to reset
@@ -198,8 +212,8 @@ for(i in 1:nruns) { #length(runs)
                     data = inputData,
                     chains = 4,
                     cores = 4,
-                    iter = 1500,
-                    warmup = 500, 
+                    iter = (samples + burnin),
+                    warmup = burnin, 
                     refresh = 0)  
 
     # extract the posteriors and save in list object
@@ -210,7 +224,7 @@ for(i in 1:nruns) { #length(runs)
     runs[[n]][[j]]$informativeJoint <- extract(m4)[c(3, 4)]
     runs[[n]][[j]]$missSpecifiedJoint <- extract(m5)[c(3, 4)]
     runs[[n]][[j]]$missSpecifiedjoint_sd1 <- extract(m6)[c(3, 4)]
-    runs[[n]][[j]]$missSpecifiedjoint_sd1 <- extract(m7)[c(3, 4)]
+    runs[[n]][[j]]$missSpecifiedjoint_sd2 <- extract(m7)[c(3, 4)]
     runs[[n]][[j]]$missSpecifiedjoint_t1.1 <- extract(m8)[c(3, 4)]
     runs[[n]][[j]]$missSpecifiedjoint_t1.2 <- extract(m9)[c(3, 4)]
     runs[[n]][[j]]$missSpecifiedjoint_t0.9 <- extract(m10)[c(3, 4)]
@@ -222,7 +236,7 @@ for(i in 1:nruns) { #length(runs)
   
   ### Save Output every X runs###
   if((i %% runsPerIter) == 0){
-    save(runs, file = str_c("simulation_true-data-gen_", m, ".RData"))
+    save(runs, file = str_c("results//true-censoring-mech//simulation_true-data-gen_", m, ".RData"))
     m <- m + 1
     n <- 1
     print(str_c((i / runsPerIter), " out of ", (nruns / runsPerIter), " saves completed"))

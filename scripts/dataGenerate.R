@@ -3,7 +3,8 @@ dataGenerate <- function(eta = NULL, beta = NULL,
                          samples = c(), 
                          frames = 50, 
                          startDay = 1000, 
-                         duration = 2100) {
+                         duration = 2100,
+                         samplesPerFrame = 1000) {
   # Takes input eta(scale) and beta(shape) and generates
   # lifetime data from Weibull distribution. These life-
   # times are then evenly assigned to 'frames' which 
@@ -18,7 +19,7 @@ dataGenerate <- function(eta = NULL, beta = NULL,
   duration <-  duration / 365
   
   # Each frame gets assigned 10 lifetimes.
-  sampleSize <- frames * 1000 
+  sampleSize <- frames * samplesPerFrame
   
   # Sample from the specified Weibull distribution
   if (length(samples) > 0) {

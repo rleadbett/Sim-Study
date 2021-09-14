@@ -32,19 +32,33 @@ progDataGenerate <- function(eta,
   if (!file.exists(cacheString)) {
     
     # Firstly test the different window sizes to get desires proportions
-    windows <- seq(1000, 13000, 100)
+    windows <- seq(500, 28000, 100)
     
     censProp <- rep(0, length(windows))
     i <- 1
     
     for (win in windows){
-      samples <- rep(0,10)
+      samples <- rep(0,5)
+      
+      if(win <10000){
+        samplesPerFrame <- 5000
+      } else {
+        samplesPerFrame <- win
+      }
       
       for (j in 1:10) {
-        SimData <- dataGenerate(eta = eta, 
+        SimData <- try(dataGenerate(eta = eta, 
                                 beta = beta,
                                 duration = win,
-                                frames = 100)
+                                frames = 50,
+                                samplesPerFrame = samplesPerFrame), silent = T)
+        while(class(SimData) == "try-error"){
+          SimData <- try(dataGenerate(eta = eta, 
+                                      beta = beta,
+                                      duration = win,
+                                      frames = 50,
+                                      samplesPerFrame = samplesPerFrame), silent = T)
+        }
         samples[j] <- sum(SimData$cens == 1) / nrow(SimData)
       }
       
